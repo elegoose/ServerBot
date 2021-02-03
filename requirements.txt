@@ -1,2 +1,4 @@
 discord
 wakeonlan
+mcstatus
+mcrcon

@@ -131,3 +131,4 @@ credentials.txt
 .idea
 RunMinecraftServer.bat
 PsExec.exe
+minecraftServerTest.py
