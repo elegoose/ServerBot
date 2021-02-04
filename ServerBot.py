@@ -3,12 +3,20 @@ from discord.ext import commands, tasks
 import servers as sv
 from mcstatus import MinecraftServer
 import socket
+from mcrcon import MCRcon
+import json
 
 with open('credentials.txt') as f:
     credentialsArray = f.read().splitlines()
+with open('registerednames.json') as filename:
+    registeredNamesData = json.load(filename)
+with open('playercoordinates.json') as coordinatesfilename:
+    coordinatesData = json.load(coordinatesfilename)
 token = credentialsArray[0]
 localServerIp = credentialsArray[1]
 serverMacAdress = credentialsArray[2]
+rconPass = credentialsArray[3]
+worldName = credentialsArray[4]
 activeServers = []
 client = commands.Bot(command_prefix=('sv.', 'server.'))
 timer = 0
@@ -148,9 +156,181 @@ async def jugadores_error(ctx, error):
         raise error
 
 
+@client.command(brief='permite guardar posición actual de minecraft',
+                aliases=['savecord', 'guardarpos', 'posactual', 'pos'])
+async def guardarposicion(ctx, *args):
+    noMinecraft = True
+    minecraftserver = None
+    for server in activeServers:
+        if server.GameName == 'Minecraft':
+            noMinecraft = False
+            minecraftserver = server
+    if noMinecraft:
+        raise sv.NoMinecraftServerRunning
+
+    nombreCoordenada = ''
+    for palabra in args:
+        nombreCoordenada += palabra
+        nombreCoordenada += ' '
+    nombreCoordenada = nombreCoordenada[: len(nombreCoordenada) - 1]
+    if nombreCoordenada == '':
+        raise sv.NoCoordinateNameChosen
+    msg = f'Guardando coordenada de nombre "{nombreCoordenada}" '
+    name = ctx.message.author.name
+
+    playerlist = await minecraftserver.playerlist(activeServers)
+    notInMinecraft = True
+    coordinates = ''
+
+    if name in registeredNamesData:
+        name = registeredNamesData[name]
+
+    for player in playerlist:
+        if name == player:
+            notInMinecraft = False
+            with MCRcon(localServerIp, rconPass) as mcr:
+                response = mcr.command(f'whois {player}')
+            array = response.split('\n')
+            ubic = array[6]
+            coordinates = ubic[19:len(ubic) - 1]
+            coordinates = coordinates.replace(worldName, "")
+            places = ['end', 'nether']
+            inOverworld = True
+            for place in places:
+                if place in coordinates:
+                    inOverworld = False
+                    if place == 'nether':
+                        coordinates = coordinates.replace('_', '')
+                    else:
+                        coordinates = coordinates[1:].replace('_', ' ')
+            if inOverworld:
+                coordinates = 'Mundo Real' + coordinates
+    if notInMinecraft:
+        raise sv.PlayerNotInGame
+
+    newPlayer = True
+    for playername in coordinatesData:
+        if name == playername:
+            newPlayer = False
+    if newPlayer:
+        coordinatesData[name] = []
+
+    msg += f' y coordenadas "{coordinates}"'
+    await ctx.send(msg)
+
+    coordinatesData[name].append({'name': nombreCoordenada, 'coordinates': coordinates})
+    with open('playercoordinates.json', 'w') as file:
+        json.dump(coordinatesData, file)
+
+
+@guardarposicion.error
+async def guardarposicion_error(ctx, error):
+    if isinstance(error, commands.CommandInvokeError):
+        error = error.original
+        if isinstance(error, sv.NoMinecraftServerRunning):
+            await ctx.send('Ningún servidor de Minecraft abierto.')
+        elif isinstance(error, sv.PlayerNotInGame):
+            await ctx.send('Parece que tu nombre de Minecraft es distinto al de Discord.\nRegistra tu nombre de '
+                           'minecraft usando sv.registrar tunombredeminecraft\nEjemplo: sv.registrar Elegoose\nEsto '
+                           'solo lo tendrás que hacer una vez.')
+        elif isinstance(error, sv.NoCoordinateNameChosen):
+            await ctx.send('Elige un nombre para tu coordenada.')
+    else:
+        await ctx.send(f'Error inesperado: {error}\nAvísale al creador para que lo arregle.')
+        raise error
+
+
+@client.command(brief='revisar las coordenadas guardadas', aliases=['mycords', 'savedcords', 'miscoords'])
+async def miscoordenadas(ctx):
+    sendername = ctx.message.author.name
+    if sendername in registeredNamesData:
+        sendername = registeredNamesData[sendername]
+    if sendername not in coordinatesData:
+        raise sv.NoCoordinatesSaved
+    msg = ''
+    for playername in coordinatesData:
+        if playername == sendername:
+            for info in coordinatesData[playername]:
+                msg += f'Nombre: "{info["name"]}" Coordenadas: "{info["coordinates"]}"\n'
+    await ctx.send(msg)
+
+
+@miscoordenadas.error
+async def miscoordenadas_error(ctx, error):
+    if isinstance(error, commands.CommandInvokeError):
+        error = error.original
+        if isinstance(error, sv.NoCoordinatesSaved):
+            await ctx.send('No has guardado ninguna coordenada.')
+    else:
+        await ctx.send(f'Error inesperado:{error}\nAvísale al creador para que lo arregle')
+        raise error
+
+
+@client.command(brief='registrar nombre de minecraft para guardar coordenadas', aliases=['register', 'reg'])
+async def registrar(ctx, *args):
+    sendername = ctx.message.author.name
+    if sendername in registeredNamesData:
+        raise sv.AlreadyRegistered
+    minecraftname = ''
+    for palabra in args:
+        minecraftname += palabra
+        minecraftname += ' '
+    minecraftname = minecraftname[: len(minecraftname) - 1]
+    registeredNamesData[sendername] = minecraftname
+    with open('registerednames.json', 'w') as file:
+        json.dump(registeredNamesData, file)
+    await ctx.send(
+        f'Has quedad@ registrad@ como "{minecraftname}".\nSi quieres modificarlo usa sv.modificar '
+        f'tunuevonombre\nEjemplo: sv.modificar Eleganso')
+
+
+@registrar.error
+async def registrar_error(ctx, error):
+    if isinstance(error, commands.CommandInvokeError):
+        error = error.original
+        if isinstance(error, sv.AlreadyRegistered):
+            await ctx.send('Ya estás registrad@. Si quieres modificar tu registro, usa sv.modificar')
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('Ingresa un nombre para registrar, por favor.')
+    else:
+        await ctx.send(f'Error de registro inesperado: {error}.\nAvísale al creador para que lo arregle.')
+        raise error
+
+
+@client.command(brief='modificar tu nombre de registro para usar sv.guardarcoordenada',
+                aliases=['modify', 'mod', 'modificarregistro'])
+async def modificar(ctx, *args):
+    sendername = ctx.message.author.name
+    if sendername not in registeredNamesData:
+        raise sv.NotRegistered
+    newminecraftname = ''
+    for palabra in args:
+        newminecraftname += palabra
+        newminecraftname += ' '
+    newminecraftname = newminecraftname[: len(newminecraftname) - 1]
+    oldName = registeredNamesData[sendername]
+    registeredNamesData[sendername] = newminecraftname
+    with open('registerednames.json', 'w') as file:
+        json.dump(registeredNamesData, file)
+    await ctx.send(f'Tu nombre de registro fue modificado de "{oldName}" a "{newminecraftname}".')
+
+
+@modificar.error
+async def modificar_error(ctx, error):
+    if isinstance(error, commands.CommandInvokeError):
+        error = error.original
+        if isinstance(error, sv.NotRegistered):
+            await ctx.send('No estás registrad@, por lo tanto no hay nada que modificar.')
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('Ingresa un nombre para modificar, por favor.')
+    else:
+        await ctx.send(f'Error de modificación inesperado: {error}.\nAvísale al creador para que lo arregle.')
+        raise error
+
+
 @tasks.loop(seconds=1)
 async def change_status():
-    current_status = ''
+    current_status = discord.Status.idle
     discord_status = None
     if not activeServers:
         current_status = 'Servers Cerrados'
@@ -160,9 +340,9 @@ async def change_status():
     for server in activeServers:
         playerCount = await server.playerCount(activeServers)
         if playerCount == 0:
-            current_status = server.idleName + 'Server open ' + 'nadie jugando'
+            current_status = server.idleName + 'Server Open ' + 'nadie jugando'
         else:
-            current_status = server.idleName + 'Server open ' + str(playerCount) + ' jugando'
+            current_status = server.idleName + 'Server Open ' + str(playerCount) + ' jugando'
         discord_status = discord.Status.online
     await client.change_presence(status=discord_status, activity=discord.Game(name=current_status))
 
