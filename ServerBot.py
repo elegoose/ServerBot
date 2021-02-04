@@ -1,6 +1,6 @@
 import discord  # noqa
 from discord.ext import commands, tasks
-import servers as sv
+import serverclass as sv
 from mcstatus import MinecraftServer
 import socket
 from mcrcon import MCRcon
