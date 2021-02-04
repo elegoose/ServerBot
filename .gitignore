@@ -132,3 +132,5 @@ credentials.txt
 RunMinecraftServer.bat
 PsExec.exe
 minecraftServerTest.py
+playercoordinates.json
+registerednames.json
