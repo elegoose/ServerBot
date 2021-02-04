@@ -48,13 +48,17 @@ class Server:
         # self.isRunning = False
         self.GameName = ''
         self.nameArray = []
+        self.idleName = ''
         self.minecraftserver = None
+        self.timer = 0
+        self.timer_started = False
 
     async def run(self, ctx, macadress):
         if self.name in minecraftNameArray:
             send_magic_packet(macadress)
             self.GameName = 'Minecraft'
             self.nameArray = minecraftNameArray
+            self.idleName = 'Mine'
             await ctx.send(f'Abriendo server de {self.GameName}...')
             p = subprocess.run("RunMinecraftServer.bat", stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
             err = p.stderr
@@ -110,7 +114,24 @@ class Server:
             else:
                 return True
 
+    async def playerCount(self, activeServers):  # noqa
+        if self.GameName == 'Minecraft':
+            try:
+                status = self.minecraftserver.status()
+            except socket.timeout:
+                await self.removeFromActiveServers(activeServers)
+                return
+            return status.players.online
+
     async def removeFromActiveServers(self, activeServers):  # noqa
         for server in activeServers:
             if server.GameName == self.GameName:
                 activeServers.remove(server)
+
+    async def shutdown(self, activeServers):
+        if self.GameName == 'Minecraft':
+            if await self.isNotEmpty(activeServers):
+                raise CantClosePopulatedServer
+            with MCRcon(localServerIp, rconPass) as mcr:
+                mcr.command("stop")
+                await self.removeFromActiveServers(activeServers)

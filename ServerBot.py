@@ -1,17 +1,24 @@
 import discord  # noqa
 from discord.ext import commands, tasks
 import servers as sv
+from mcstatus import MinecraftServer
+import socket
 
 with open('credentials.txt') as f:
     credentialsArray = f.read().splitlines()
 token = credentialsArray[0]
+localServerIp = credentialsArray[1]
 serverMacAdress = credentialsArray[2]
 activeServers = []
 client = commands.Bot(command_prefix=('sv.', 'server.'))
+timer = 0
 
 
 @client.event
 async def on_ready():
+    change_status.start()
+    check_minecraft_status.start()
+    automatic_shutdown.start()
     print('Bot is ready.')
 
 
@@ -139,6 +146,57 @@ async def jugadores_error(ctx, error):
     else:
         await ctx.send(f'Error inesperado: {error}\nAvísale al creador para que lo arregle.')
         raise error
+
+
+@tasks.loop(seconds=1)
+async def change_status():
+    current_status = ''
+    discord_status = None
+    if not activeServers:
+        current_status = 'Servers Cerrados'
+        discord_status = discord.Status.idle
+        await client.change_presence(status=discord_status, activity=discord.Game(name=current_status))
+        return
+    for server in activeServers:
+        playerCount = await server.playerCount(activeServers)
+        if playerCount == 0:
+            current_status = server.idleName + 'Server open ' + 'nadie jugando'
+        else:
+            current_status = server.idleName + 'Server open ' + str(playerCount) + ' jugando'
+        discord_status = discord.Status.online
+    await client.change_presence(status=discord_status, activity=discord.Game(name=current_status))
+
+
+@tasks.loop(seconds=30)
+async def check_minecraft_status():
+    if activeServers:
+        return
+    mcserver = MinecraftServer(localServerIp)
+    try:
+        mcserver.status()
+        server = sv.Server()
+        server.name = 'minecraft'
+        server.GameName = 'Minecraft'
+        server.minecraftserver = mcserver
+        server.nameArray = sv.minecraftNameArray
+        server.idleName = 'Mine'
+        activeServers.append(server)
+    except socket.timeout:
+        pass
+
+
+@tasks.loop(seconds=120)
+async def automatic_shutdown():
+    if not activeServers:
+        return
+    for server in activeServers:
+        playercount = await server.playerCount(activeServers)
+        if playercount == 0 and not server.timer_started:
+            server.timer_started = True
+        elif playercount == 0 and server.timer_started:
+            server.timer += 120
+        if server.timer >= 840:
+            await server.shutdown(activeServers)
 
 
 client.run(token)
