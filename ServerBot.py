@@ -6,7 +6,7 @@ import socket
 from mcrcon import MCRcon
 import json
 import asyncio
-
+import exceptions as err
 with open('credentials.txt') as f:
     credentialsArray = f.read().splitlines()
 with open('registerednames.json') as filename:
@@ -41,10 +41,10 @@ async def on_command_error(ctx, error):
 async def abrir(ctx, servername):
     servername = servername.lower()
     if servername not in sv.serverNames:
-        raise sv.ServerNotFound
+        raise err.ServerNotFound
     for server in activeServers:
         if servername in server.nameArray:
-            raise sv.ServerAlreadyRunning
+            raise err.ServerAlreadyRunning
     server = sv.Server()
     server.name = servername
     await server.run(ctx, serverMacAdress)
@@ -55,15 +55,15 @@ async def abrir(ctx, servername):
 async def abrir_error(ctx, error):
     if isinstance(error, commands.CommandInvokeError):
         error = error.original
-        if isinstance(error, sv.ServerNotFound):
+        if isinstance(error, err.ServerNotFound):
             await ctx.send(f'No he encontrado ningún servidor para abrir con ese nombre.')
-        elif isinstance(error, sv.ServerAlreadyRunning):
+        elif isinstance(error, err.ServerAlreadyRunning):
             await ctx.send('Ese servidor ya está abierto o se está abriendo.')
-        elif isinstance(error, sv.ServerNotYetImplemented):
+        elif isinstance(error, err.ServerNotYetImplemented):
             await ctx.send('Aún no implemento este servidor al bot :sob:')
-        elif isinstance(error, sv.CouldntAccessRemoteServer):
+        elif isinstance(error, err.CouldntAccessRemoteServer):
             await ctx.send('Por alguna razón, no se puede acceder al PC del server.')
-        elif isinstance(error, sv.UnexpectedRunError):
+        elif isinstance(error, err.UnexpectedRunError):
             await ctx.send('Error inesperado en método run')
             raise error
         else:
@@ -80,7 +80,7 @@ async def abrir_error(ctx, error):
 async def cerrar(ctx, servername):
     servername = servername.lower()
     if servername not in sv.serverNames:
-        raise sv.ServerNotFound
+        raise err.ServerNotFound
     isRunning = False
     for server in activeServers:
         if servername in server.nameArray:
@@ -91,18 +91,18 @@ async def cerrar(ctx, servername):
             except ValueError:
                 return
     if not isRunning:
-        raise sv.ServerIsNotRunning
+        raise err.ServerIsNotRunning
 
 
 @cerrar.error
 async def cerrar_error(ctx, error):
     if isinstance(error, commands.CommandInvokeError):
         error = error.original
-        if isinstance(error, sv.ServerIsNotRunning):
+        if isinstance(error, err.ServerIsNotRunning):
             await ctx.send('El servidor no está abierto, por lo tanto no se puede cerrar.')
-        elif isinstance(error, sv.ServerNotFound):
+        elif isinstance(error, err.ServerNotFound):
             await ctx.send('No he encontrado ningún servidor para cerrar con ese nombre.')
-        elif isinstance(error, sv.CantClosePopulatedServer):
+        elif isinstance(error, err.CantClosePopulatedServer):
             await ctx.send('No se puede cerrar el servidor porque hay jugadores dentro.')
         else:
             await ctx.send(f'Error de invocación inesperado: {error}\nAvísale al creador para que lo arregle.')
@@ -119,7 +119,7 @@ async def cerrar_error(ctx, error):
 async def jugadores(ctx, servername):
     servername = servername.lower()
     if servername not in sv.serverNames:
-        raise sv.ServerNotFound
+        raise err.ServerNotFound
 
     isRunning = False
     playerlist = None
@@ -131,7 +131,7 @@ async def jugadores(ctx, servername):
             isRunning = True
 
     if not isRunning:
-        raise sv.ServerIsNotRunning
+        raise err.ServerIsNotRunning
 
     if not playerlist:
         embed = discord.Embed(title=f'No hay nadie jugando en el servidor de {gameName}', colour=discord.Color.orange())
@@ -151,9 +151,9 @@ async def jugadores(ctx, servername):
 async def jugadores_error(ctx, error):
     if isinstance(error, commands.CommandInvokeError):
         error = error.original
-        if isinstance(error, sv.ServerIsNotRunning):
+        if isinstance(error, err.ServerIsNotRunning):
             await ctx.send('El servidor no está abierto.')
-        elif isinstance(error, sv.ServerNotFound):
+        elif isinstance(error, err.ServerNotFound):
             await ctx.send('No he encontrado ningún servidor con ese nombre.')
         else:
             await ctx.send(f'Error de invocación inesperado: {error}\nAvísale al creador para que lo arregle.')
@@ -175,7 +175,7 @@ async def guardarposicion(ctx, *args):
             noMinecraft = False
             minecraftserver = server
     if noMinecraft:
-        raise sv.NoMinecraftServerRunning
+        raise err.NoMinecraftServerRunning
 
     nombreCoordenada = ''
     for palabra in args:
@@ -183,7 +183,7 @@ async def guardarposicion(ctx, *args):
         nombreCoordenada += ' '
     nombreCoordenada = nombreCoordenada[: len(nombreCoordenada) - 1]
     if nombreCoordenada == '':
-        raise sv.NoCoordinateNameChosen
+        raise err.NoCoordinateNameChosen
     name = ctx.message.author.name
 
     playerlist = await minecraftserver.playerlist(activeServers)
@@ -214,7 +214,7 @@ async def guardarposicion(ctx, *args):
             if inOverworld:
                 coordinates = 'Mundo Real' + coordinates
     if notInMinecraft:
-        raise sv.PlayerNotInGame
+        raise err.PlayerNotInGame
 
     newPlayer = True
     for playername in coordinatesData:
@@ -236,14 +236,14 @@ async def guardarposicion(ctx, *args):
 async def guardarposicion_error(ctx, error):
     if isinstance(error, commands.CommandInvokeError):
         error = error.original
-        if isinstance(error, sv.NoMinecraftServerRunning):
+        if isinstance(error, err.NoMinecraftServerRunning):
             await ctx.send('Ningún servidor de Minecraft abierto.')
-        elif isinstance(error, sv.PlayerNotInGame):
+        elif isinstance(error, err.PlayerNotInGame):
             await ctx.send('No estás jugando minecraft, o parece que tu nombre de Minecraft es distinto al de '
                            'Discord.\nRegistra tu nombre de '
                            'minecraft usando sv.registrar tunombredeminecraft\nEjemplo: sv.registrar Elegoose\nEsto '
                            'solo lo tendrás que hacer una vez.')
-        elif isinstance(error, sv.NoCoordinateNameChosen):
+        elif isinstance(error, err.NoCoordinateNameChosen):
             await ctx.send('Elige un nombre para tu coordenada.')
         else:
             await ctx.send(f'Error de invocación inesperado: {error}\nAvísale al creador para que lo arregle.')
@@ -259,7 +259,7 @@ async def miscoordenadas(ctx):
     if sendername in registeredNamesData:
         sendername = registeredNamesData[sendername]
     if sendername not in coordinatesData:
-        raise sv.NoCoordinatesSaved
+        raise err.NoCoordinatesSaved
     embed = discord.Embed(title=f'Coordenadas guardadas de {sendername}', colour=discord.Color.blue())
     for info in coordinatesData[sendername]:
         embed.add_field(name=info["name"], value=info["coordinates"], inline=False)
@@ -271,7 +271,7 @@ async def miscoordenadas(ctx):
 async def miscoordenadas_error(ctx, error):
     if isinstance(error, commands.CommandInvokeError):
         error = error.original
-        if isinstance(error, sv.NoCoordinatesSaved):
+        if isinstance(error, err.NoCoordinatesSaved):
             await ctx.send('No has guardado ninguna coordenada.')
         else:
             await ctx.send(f'Error de invocación inesperado:{error}\nAvísale al creador para que lo arregle')
@@ -287,14 +287,14 @@ async def cambiarcoord(ctx, *args):
     if sendername in registeredNamesData:
         sendername = registeredNamesData[sendername]
     if sendername not in coordinatesData:
-        raise sv.NoCoordinatesSaved
+        raise err.NoCoordinatesSaved
     nametochange = ''
     for palabra in args:
         nametochange += palabra
         nametochange += ' '
     nametochange = nametochange[: len(nametochange) - 1]
     if nametochange == '':
-        raise sv.NoCoordinateNameChosen
+        raise err.NoCoordinateNameChosen
     for info in coordinatesData[sendername]:
         if info["name"] == nametochange:
             embed = discord.Embed(title=f'Escribe a continuación el nuevo nombre para:', colour=discord.Color.orange(),
@@ -311,18 +311,18 @@ async def cambiarcoord(ctx, *args):
             with open('playercoordinates.json', 'w') as file:
                 json.dump(coordinatesData, file)
             return
-    raise sv.NoCoordinatesWithThatName
+    raise err.NoCoordinatesWithThatName
 
 
 @cambiarcoord.error
 async def cambiarcoord_error(ctx, error):
     if isinstance(error, commands.CommandInvokeError):
         error = error.original
-        if isinstance(error, sv.NoCoordinatesSaved):
+        if isinstance(error, err.NoCoordinatesSaved):
             await ctx.send('No has guardado ninguna coordenada.')
-        elif isinstance(error, sv.NoCoordinatesWithThatName):
+        elif isinstance(error, err.NoCoordinatesWithThatName):
             await ctx.send('No se ha encontrado ninguna coordenada guardada con ese nombre.')
-        elif isinstance(error, sv.NoCoordinateNameChosen):
+        elif isinstance(error, err.NoCoordinateNameChosen):
             await ctx.send('No has escrito ninguna coordenada para cambiar.')
         elif isinstance(error, asyncio.TimeoutError):
             await ctx.send('Se te acabó el tiempo para enviar un nuevo nombre de coordenada')
@@ -340,14 +340,14 @@ async def borrarcoord(ctx, *args):
     if sendername in registeredNamesData:
         sendername = registeredNamesData[sendername]
     if sendername not in coordinatesData:
-        raise sv.NoCoordinatesSaved
+        raise err.NoCoordinatesSaved
     nametoerase = ''
     for palabra in args:
         nametoerase += palabra
         nametoerase += ' '
     nametoerase = nametoerase[: len(nametoerase) - 1]
     if nametoerase == '':
-        raise sv.NoCoordinateNameChosen
+        raise err.NoCoordinateNameChosen
     for info in coordinatesData[sendername]:
         if info["name"] == nametoerase:
             embed = discord.Embed(title=f'¿Segur@ que quieres borrar esta coordenada?',
@@ -373,23 +373,23 @@ async def borrarcoord(ctx, *args):
             elif resp in noResp:
                 await msg.edit(content='La coordenada no será borrada.')
             else:
-                raise sv.WrongAnswer
-    raise sv.NoCoordinatesWithThatName
+                raise err.WrongAnswer
+    raise err.NoCoordinatesWithThatName
 
 
 @borrarcoord.error
 async def borrarcoord_error(ctx, error):
     if isinstance(error, commands.CommandInvokeError):
         error = error.original
-        if isinstance(error, sv.NoCoordinatesSaved):
+        if isinstance(error, err.NoCoordinatesSaved):
             await ctx.send('No has guardado ninguna coordenada.')
-        elif isinstance(error, sv.NoCoordinatesWithThatName):
+        elif isinstance(error, err.NoCoordinatesWithThatName):
             await ctx.send('No se ha encontrado ninguna coordenada guardada con ese nombre.')
-        elif isinstance(error, sv.NoCoordinateNameChosen):
+        elif isinstance(error, err.NoCoordinateNameChosen):
             await ctx.send('No has escrito ninguna coordenada para borrar.')
         elif isinstance(error, asyncio.TimeoutError):
             await ctx.send('Se te acabó el tiempo para enviar una respuesta.')
-        elif isinstance(error, sv.WrongAnswer):
+        elif isinstance(error, err.WrongAnswer):
             await ctx.send('No escribiste una respuesta válida.')
         else:
             await ctx.send(f'Error de invocación inesperado:{error}\nAvísale al creador para que lo arregle')
@@ -403,7 +403,7 @@ async def borrarcoord_error(ctx, error):
 async def registrar(ctx, *args):
     sendername = ctx.message.author.name
     if sendername in registeredNamesData:
-        raise sv.AlreadyRegistered
+        raise err.AlreadyRegistered
     minecraftname = ''
     for palabra in args:
         minecraftname += palabra
@@ -422,7 +422,7 @@ async def registrar(ctx, *args):
 async def registrar_error(ctx, error):
     if isinstance(error, commands.CommandInvokeError):
         error = error.original
-        if isinstance(error, sv.AlreadyRegistered):
+        if isinstance(error, err.AlreadyRegistered):
             await ctx.send('Ya estás registrad@. Si quieres modificar tu registro, usa sv.modificar')
         else:
             await ctx.send(f'Error de invocación inesperado: {error}\nAvísale al creador para que lo arregle.')
@@ -439,7 +439,7 @@ async def registrar_error(ctx, error):
 async def modificar(ctx, *args):
     sendername = ctx.message.author.name
     if sendername not in registeredNamesData:
-        raise sv.NotRegistered
+        raise err.NotRegistered
     newminecraftname = ''
     for palabra in args:
         newminecraftname += palabra
@@ -456,7 +456,7 @@ async def modificar(ctx, *args):
 async def modificar_error(ctx, error):
     if isinstance(error, commands.CommandInvokeError):
         error = error.original
-        if isinstance(error, sv.NotRegistered):
+        if isinstance(error, err.NotRegistered):
             await ctx.send('No estás registrad@, por lo tanto no hay nada que modificar.')
         else:
             await ctx.send(f'Error de invocación inesperado: {error}\nAvísale al creador para que lo arregle.')
