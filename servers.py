@@ -42,6 +42,28 @@ class CantClosePopulatedServer(Exception):
     pass
 
 
+class NoMinecraftServerRunning(Exception):
+    pass
+
+
+class PlayerNotInGame(Exception):
+    pass
+
+
+class AlreadyRegistered(Exception):
+    pass
+
+
+class NoCoordinatesSaved(Exception):
+    pass
+
+
+class NotRegistered(Exception):
+    pass
+
+class NoCoordinateNameChosen(Exception):
+    pass
+
 class Server:
     def __init__(self):
         self.name = ''
