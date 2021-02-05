@@ -10,7 +10,7 @@ class ServerNotYetImplemented(Exception):
     pass
 
 
-class CouldntAccessRemoteServer(Exception):
+class CantAccessRemoteServer(Exception):
     pass
 
 
@@ -45,11 +45,14 @@ class NoCoordinatesSaved(Exception):
 class NotRegistered(Exception):
     pass
 
+
 class NoCoordinateNameChosen(Exception):
     pass
 
+
 class NoCoordinatesWithThatName(Exception):
     pass
+
 
 class WrongAnswer(Exception):
     pass
