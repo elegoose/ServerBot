@@ -26,6 +26,7 @@ class Server(commands.Cog):
         server = sv.Server()
         server.name = servername
         await server.run(ctx, serverMacAddress)
+        await ctx.message.clear_reaction('🕑')
         await ctx.message.add_reaction('✅')
         sv.activeServers.append(server)
 
@@ -62,12 +63,7 @@ class Server(commands.Cog):
         for server in sv.activeServers:
             if servername in server.nameArray:
                 isRunning = True
-                await server.stop(ctx)
-                try:
-                    await server.removeFromActiveServers()
-                except ValueError:
-                    await ctx.send("Este servidor no está abierto.")
-                    return
+                await server.stop(ctx, self.client)
         if not isRunning:
             raise err.ServerIsNotRunning
 
