@@ -144,7 +144,7 @@ class Minecraft(commands.Cog):
             await ctx.send(f'Error inesperado:{error}\nAvísale al creador para que lo arregle')
             raise error
 
-    @commands.command(brief='modificar nombre de coordenada', aliases=['modcord', 'changecord', 'modificar'])
+    @commands.command(brief='modificar nombre de coordenada', aliases=['modcoord', 'changecoord', 'modificar'])
     async def cambiar_nombre_coordenada(self, ctx, *args):
         if not args:
             raise err.MissingArgument
@@ -329,7 +329,7 @@ class Minecraft(commands.Cog):
             await ctx.send(f'Error de modificación inesperado: {error}.\nAvísale al creador para que lo arregle.')
             raise error
 
-    @commands.command(brief='Agregar coordenadas manualmente', aliases=['addcord', 'add'])
+    @commands.command(brief='Agregar coordenadas manualmente', aliases=['addcoord', 'add'])
     async def agregar_coordenada(self, ctx, *args):
         if not args:
             raise err.MissingArgument
