@@ -2,10 +2,11 @@ import discord
 from discord.ext import commands
 import serverclass as sv
 import exceptions as err
+import sys
 
 with open('credentials.txt') as f:
     credentialsArray = f.read().splitlines()
-serverMacAdress = credentialsArray[2]
+serverMacAddress = credentialsArray[2]
 
 
 class Server(commands.Cog):
@@ -13,7 +14,7 @@ class Server(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.command(brief="abre el servidor seleccionado")
+    @commands.command(brief="abre el servidor seleccionado", aliases=['open'])
     async def abrir(self, ctx, servername):
         servername = servername.lower()
         if servername not in sv.serverNames:
@@ -21,9 +22,11 @@ class Server(commands.Cog):
         for server in sv.activeServers:
             if servername in server.nameArray:
                 raise err.ServerAlreadyRunning
+        await ctx.message.add_reaction('🕑')
         server = sv.Server()
         server.name = servername
-        await server.run(ctx, serverMacAdress)
+        await server.run(ctx, serverMacAddress)
+        await ctx.message.add_reaction('✅')
         sv.activeServers.append(server)
 
     @abrir.error
@@ -50,7 +53,7 @@ class Server(commands.Cog):
             await ctx.send(f'Error inesperado: {error}')
             raise error
 
-    @commands.command(brief="cierra el servidor seleccionado")
+    @commands.command(brief="cierra el servidor seleccionado", aliases=['stop'])
     async def cerrar(self, ctx, servername):
         servername = servername.lower()
         if servername not in sv.serverNames:
@@ -61,8 +64,9 @@ class Server(commands.Cog):
                 isRunning = True
                 await server.stop(ctx)
                 try:
-                    sv.activeServers.remove(server)
+                    server.removeFromActiveServers()
                 except ValueError:
+                    await ctx.send("Este servidor no está abierto.")
                     return
         if not isRunning:
             raise err.ServerIsNotRunning
@@ -135,6 +139,11 @@ class Server(commands.Cog):
         else:
             await ctx.send(f'Error inesperado: {error}\nAvísale al creador para que lo arregle.')
             raise error
+
+    @commands.command(hidden=True)
+    async def stop_bot(self, ctx):
+        await ctx.send('bot stopped')
+        sys.exit()
 
 
 def setup(client):

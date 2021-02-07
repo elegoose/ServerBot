@@ -42,9 +42,9 @@ async def change_status():
     for server in sv.activeServers:
         playerCount = await server.playerCount()
         if playerCount == 0:
-            current_status = server.idleName + 'Server Open ' + 'nadie jugando'
+            current_status = f'{server.idleName} nadie jugando'
         else:
-            current_status = server.idleName + 'Server Open ' + str(playerCount) + ' jugando'
+            current_status = f'{server.idleName} {playerCount} jugando'
         discord_status = discord.Status.online
     await client.change_presence(status=discord_status, activity=discord.Game(name=current_status))
 
@@ -61,7 +61,7 @@ async def check_minecraft_status():
         server.GameName = 'Minecraft'
         server.minecraftserver = mcserver
         server.nameArray = sv.minecraftNameArray
-        server.idleName = 'Mine'
+        server.idleName = 'Minecraft'
         sv.activeServers.append(server)
     except socket.timeout:
         pass
@@ -73,11 +73,8 @@ async def automatic_shutdown():
         return
     for server in sv.activeServers:
         playercount = await server.playerCount()
-        if playercount != 0:
+        if playercount != 0:  # if playercount is different than 0, restart the timer
             server.timer = 0
-            return
-        if not server.timer_started:
-            server.timer_started = True
             return
         server.timer += 120
         if server.timer >= 840:

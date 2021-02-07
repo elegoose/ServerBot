@@ -7,6 +7,7 @@ import socket
 import exceptions as er
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+
 minecraftNameArray = ['mc', 'minecraft', 'mine']
 conanExilesNameArray = ['conan', 'conanexiles']
 killingFloorNameArray = ['kf2', 'kf', 'killingfloor2', 'killingfloor']
@@ -17,8 +18,10 @@ localServerIp = credentialsArray[1]
 rconPass = credentialsArray[3]
 activeServers = []
 
+
 def sleepserverpc():
     subprocess.run("SleepServerPC.bat", stdin=None, stdout=None, stderr=None, close_fds=True)
+
 
 class Server:
     def __init__(self):
@@ -28,14 +31,13 @@ class Server:
         self.idleName = ''
         self.minecraftserver = None
         self.timer = 0
-        self.timer_started = False
 
     async def run(self, ctx, macadress):
         if self.name in minecraftNameArray:
             send_magic_packet(macadress)
             self.GameName = 'Minecraft'
             self.nameArray = minecraftNameArray
-            self.idleName = 'Mine'
+            self.idleName = 'Minecraft'
             embed = discord.Embed(title=f'Abriendo server de {self.GameName}', colour=discord.Color.blue(),
                                   description='Puede tardar un poco...')
             embed.set_image(
@@ -70,9 +72,6 @@ class Server:
         if self.GameName == 'Minecraft':
             if await self.isNotEmpty():
                 raise er.CantClosePopulatedServer
-            embed = discord.Embed(title=f'Cerrando server de {self.GameName}', colour=discord.Color.orange())
-            embed.set_image(url='https://wiki.moddinglegacy.com/images/4/49/TNT_Yeeter_cow.gif')
-            message = await ctx.send(embed=embed)
             with MCRcon(localServerIp, rconPass) as mcr:
                 mcr.command("stop")
             embed = discord.Embed(title=f'Server de {self.GameName} cerrado.', colour=discord.Color.green())
@@ -83,7 +82,7 @@ class Server:
                     '00Mjc0LWJhYjQtY2U3ZjhkODcyMjYzXC9kNmJ5bzcyLTc4ZDE2YTUwLWEzOTgtNDE3Ni1hZTg0LTcyYzYwODNiNTBhNy5wbmc'
                     'ifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6ZmlsZS5kb3dubG9hZCJdfQ.qiOeCjNfyNe3RQ7FZekhvvvKTlc1K'
                     '5BmTdDG75tQSVY')
-
+            message = await ctx.send(embed=embed)
             await message.edit(embed=embed)
             await self.removeFromActiveServers()
             loop = asyncio.get_event_loop()
@@ -132,6 +131,9 @@ class Server:
                 return
             with MCRcon(localServerIp, rconPass) as mcr:
                 mcr.command("stop")
-            await self.removeFromActiveServers()
+            try:
+                await self.removeFromActiveServers()
+            except ValueError:
+                return
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(ThreadPoolExecutor(), sleepserverpc)
