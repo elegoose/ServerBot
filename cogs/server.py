@@ -136,13 +136,14 @@ class Server(commands.Cog):
             await ctx.send(f'Error inesperado: {error}\nAvísale al creador para que lo arregle.')
             raise error
 
-    @commands.command()
+    @commands.command(brief='Muestra información sobre algunos comandos del bot')
     async def info(self, ctx):
         embed = discord.Embed(title=f'Hola! Mi nombre es ServerBot :robot:',
                               colour=discord.Color.blue(), description='Estos son algunos de los comandos que tengo:')
         embed.set_image(url='https://i.ytimg.com/vi/Sl6v84l5xcg/maxresdefault.jpg')
         embed.add_field(name='sv.guardarposicion',
-                        value='Ejemplo: "sv.guardarposicion Mi Casa" guarda tu posición actual de Minecraft como "Mi Casa" en una lista',
+                        value='Ejemplo: "sv.guardarposicion Mi Casa" guarda tu posición actual de Minecraft como "Mi '
+                              'Casa" en una lista',
                         inline=False)
         embed.add_field(name='sv.mycoords o sv.mc',
                         value='Ejemplo: "sv.mc" te muestra todas las coordenadas que has guardado', inline=False)
@@ -155,14 +156,16 @@ class Server(commands.Cog):
                         value='Ejemplo: "sv.modificar Mi Casa" modifica el nombre de la coordenada "Mi Casa"',
                         inline=False)
         embed.add_field(name='sv.jugadores', value='Ejemplo: "sv.jugadores minecraft" muestra quiénes están jugando '
-                                                   'en el servidor seleccionado.',inline=False)
-        embed.add_field(name='sv.abrir', value='Ejemplo: "sv.abrir minecraft" Clásico del ServerBot :smirk:',inline=False)
+                                                   'en el servidor seleccionado.', inline=False)
+        embed.add_field(name='sv.abrir', value='Ejemplo: "sv.abrir minecraft" Clásico del ServerBot :smirk:',
+                        inline=False)
         embed.add_field(name='¡Todos los comandos tienen abreviaciones! :open_mouth:', value='"minecraft" se abrevia '
                                                                                              '"mine", "mc" y los '
                                                                                              'comandos también, '
                                                                                              'como por ejemplo '
                                                                                              '"sv.guardarposicion", '
-                                                                                             'que se abrevia "sv.pos"',inline=False)
+                                                                                             'que se abrevia "sv.pos"',
+                        inline=False)
         embed.add_field(name='¡Estado de los servidores en vivo!! :exploding_head:', value='A la derecha donde están '
                                                                                            'los usuarios '
                                                                                            'conectados, abajo de mi '
@@ -175,7 +178,7 @@ class Server(commands.Cog):
                         value='Puedes ingresar los nombres y coordenadas como quieras, ¿Te gustan las comas? puedes '
                               'hacer sv.add 122,64,197 e igual sirve!')
         embed.add_field(name='Tengo cierre automático :star_struck:',
-                        value='Si nadie está jugando, mis servidores se cierran automaticamente, apagando el '
+                        value='Si nadie está jugando, mis servidores se cierran automáticamente, apagando el '
                               'computador donde está el servidor.')
         embed.add_field(name='En un futuro seré multiserver :sunglasses: ',
                         value='Ahora sólo puedo abrir y cerrar un servidor de Minecraft, pero en el futuro también de '
