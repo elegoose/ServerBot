@@ -64,7 +64,7 @@ class Server(commands.Cog):
                 isRunning = True
                 await server.stop(ctx)
                 try:
-                    server.removeFromActiveServers()
+                    await server.removeFromActiveServers()
                 except ValueError:
                     await ctx.send("Este servidor no está abierto.")
                     return
