@@ -46,13 +46,21 @@ class NotRegistered(Exception):
     pass
 
 
-class NoCoordinateNameChosen(Exception):
-    pass
-
-
 class NoCoordinatesWithThatName(Exception):
     pass
 
 
-class WrongAnswer(Exception):
+class NoDuplicateNamesAllowed(Exception):
+    pass
+
+
+class NoDuplicateCoordinatesAllowed(Exception):
+    pass
+
+
+class BadCoordinateFormat(Exception):
+    pass
+
+
+class MissingArgument(Exception):
     pass
