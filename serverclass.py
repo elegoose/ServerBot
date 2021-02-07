@@ -20,7 +20,7 @@ activeServers = []
 
 
 def sleepserverpc():
-    subprocess.run("SleepServerPC.bat", stdin=None, stdout=None, stderr=None, close_fds=True)
+    subprocess.Popen("SleepServerPC.bat", stdin=None, stdout=None, stderr=None, close_fds=True)
 
 
 class Server:
@@ -44,8 +44,9 @@ class Server:
                 url='https://i.pinimg.com/originals/02/a3/09/02a3098f242e38c1b8e76c37bbd3c5d6.gif')
 
             message = await ctx.send(embed=embed)
-            p = subprocess.run("RunMinecraftServer.bat", stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
-            err = p.stderr
+            await asyncio.sleep(5)
+            p = subprocess.Popen("RunMinecraftServer.bat", stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+            err = p.communicate()[1]
             if err[2:35] == 'remote_abrir_mcserver.bat started':
                 embed = discord.Embed(title=f'Servidor de Minecraft abierto :white_check_mark:',
                                       colour=discord.Color.green())
@@ -68,12 +69,28 @@ class Server:
         else:
             raise er.UnexpectedRunError
 
-    async def stop(self, ctx):  # noqa
+    async def stop(self, ctx, client):  # noqa
         if self.GameName == 'Minecraft':
             if await self.isNotEmpty():
                 raise er.CantClosePopulatedServer
             with MCRcon(localServerIp, rconPass) as mcr:
                 mcr.command("stop")
+
+            embed = discord.Embed(title=f'Cerrando server de {self.GameName}...', colour=discord.Color.orange())
+            embed.set_image(url='https://media1.tenor.com/images/217c1afecaa90100c7796949ee045173/tenor.gif')
+            message = await ctx.send(embed=embed)
+            while True:
+                await asyncio.sleep(5)
+                try:
+                    self.minecraftserver.status()
+                except socket.timeout:
+                    break
+            try:
+                await self.removeFromActiveServers()
+            except ValueError:
+                await ctx.send("Este servidor no está abierto.")
+                return
+
             embed = discord.Embed(title=f'Server de {self.GameName} cerrado.', colour=discord.Color.green())
             embed.set_image(
                 url='https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/284b6a8e-dc16-4274-bab4-ce7f8d872263'
@@ -82,9 +99,11 @@ class Server:
                     '00Mjc0LWJhYjQtY2U3ZjhkODcyMjYzXC9kNmJ5bzcyLTc4ZDE2YTUwLWEzOTgtNDE3Ni1hZTg0LTcyYzYwODNiNTBhNy5wbmc'
                     'ifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6ZmlsZS5kb3dubG9hZCJdfQ.qiOeCjNfyNe3RQ7FZekhvvvKTlc1K'
                     '5BmTdDG75tQSVY')
-            message = await ctx.send(embed=embed)
             await message.edit(embed=embed)
-            await self.removeFromActiveServers()
+            if not activeServers:
+                current_status = 'Servers Cerrados'
+                discord_status = discord.Status.idle
+                await client.change_presence(status=discord_status, activity=discord.Game(name=current_status))
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(ThreadPoolExecutor(), sleepserverpc)
 
@@ -131,6 +150,12 @@ class Server:
                 return
             with MCRcon(localServerIp, rconPass) as mcr:
                 mcr.command("stop")
+            while True:
+                await asyncio.sleep(5)
+                try:
+                    self.minecraftserver.status()
+                except socket.timeout:
+                    break
             try:
                 await self.removeFromActiveServers()
             except ValueError:
