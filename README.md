@@ -1,5 +1,5 @@
 # ServerBot
-Attempting to make a discord bot that let users interact with home server. At the time it only supports Minecraft server but it was made thinking of multiple server hosting. This implementation of the bot is made using Wake On Lan (WOL) to remotely (from the computer that is running this bot, that should be in the same network) turn on the server.
+Attempting to make a discord bot that let users interact with home server. At the time it only supports Minecraft servers but it was made thinking of multiple server hosting. This implementation of the bot is made using Wake On Lan (WOL) to remotely (from the computer that is running this bot, that should be in the same network) turn on the server.
 
 This bot was made with energy saving reasons in mind, but it also has some other extra features that will be shown bellow.
 
